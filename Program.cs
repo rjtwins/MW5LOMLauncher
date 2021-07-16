@@ -34,7 +34,8 @@ namespace MW5LOMLauncherV2
         ProgramData ProgramData = new ProgramData();
         string ProgramDataPath = "";
         string LatestVersion = "";
-        bool ExeExists = false;
+        public bool ExeExists = false;
+        bool GithubUnreachable = false;
 
         public Logic(Form1 form1)
         {
@@ -44,8 +45,20 @@ namespace MW5LOMLauncherV2
 
             bool update = false;
 
-            var client = new GitHubClient(new ProductHeaderValue("MW5LoadOrderManagerUpdater"));
-            this.LatestVersion = client.Repository.Release.GetLatest("rjtwins", "MW5-Mod-Manager").Result.TagName;
+            try
+            {
+                var client = new GitHubClient(new ProductHeaderValue("MW5LoadOrderManagerUpdater"));
+                this.LatestVersion = client.Repository.Release.GetLatest("rjtwins", "MW5-Mod-Manager").Result.TagName;
+            }
+            catch (Exception e)
+            {
+                form1.listBox1.Items.Add("Github unreachable for update trying to launch from existing executable...");
+                Console.WriteLine("Github unreachable for update trying to launch from existing executable...");
+                GithubUnreachable = true;
+
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+            }
 
             //Is this our first time running?
             if (LoadGenProgramData())
@@ -56,7 +69,7 @@ namespace MW5LOMLauncherV2
                 //we are running a "fresh" version with no stored program data or a corrupt program data file.
                 update = true;
             }
-            else
+            else if(!GithubUnreachable)
             {
                 form1.listBox1.Items.Add("Checking for updates...");
                 form1.listBox1.Items.Add(String.Format("The latest release is tagged at {0} we are running {1}",
@@ -77,7 +90,7 @@ namespace MW5LOMLauncherV2
                 }
             }
 
-            if (update)
+            if (update && !GithubUnreachable)
             {
                 try
                 {
@@ -105,6 +118,9 @@ namespace MW5LOMLauncherV2
             }
             form1.listBox1.Items.Add("Done, starting MW5 Load Order Manager");
             Console.WriteLine("Done, starting MW5 Mod Loader Manager");
+
+            form1.timer1.Enabled = true;
+            form1.timer1.Start();
         }
 
         internal static void StartMainProgram()

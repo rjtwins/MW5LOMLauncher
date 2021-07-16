@@ -13,14 +13,12 @@ namespace MW5LOMLauncherV2
 {
     public partial class Form1 : Form
     {
+        Logic logic;
         public Form1()
         {
             InitializeComponent();
-            Logic logic = new Logic(this);
+            this.logic = new Logic(this);
             Application.DoEvents();
-            this.timer1.Enabled = true;
-            this.timer1.Start();
-
         }
 
         private void textBox1_TextChanged(object sender, EventArgs e)
@@ -28,9 +26,23 @@ namespace MW5LOMLauncherV2
 
         }
 
-        private void timer1_Tick(object sender, EventArgs e)
+        public void timer1_Tick(object sender, EventArgs e)
         {
-            Logic.StartMainProgram();
+            timer1.Stop();
+            try
+            {
+                Logic.StartMainProgram();
+            }
+            catch (Exception ex)
+            {
+                string message = "No executable was found!\nIs this your first time running the launcher without and internet connection?";
+                string caption = "ERROR Executable not found!";
+                MessageBoxButtons buttons = MessageBoxButtons.OK;
+                DialogResult Result = MessageBox.Show(message, caption, buttons);
+
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
+            }
             Environment.Exit(0);
         }
     }
