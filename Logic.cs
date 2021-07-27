@@ -115,7 +115,7 @@ namespace MW5LOMLauncherV2
                 System.IO.Directory.CreateDirectory(ProgramDataPath);
                 System.IO.File.Create(ProgramDataPath + @"\ProgramData.json").Close();
                 this.ProgramData.vendor = "EPIC";
-                this.ProgramData.installdir = new string[2] { "", "" };
+                this.ProgramData.installdir = new string[2] {"", ""};
                 this.ProgramData.version = 0f;
                 Console.WriteLine(ProgramDataPath + @"\ProgramData.json was not found.");
                 return true;
@@ -123,6 +123,7 @@ namespace MW5LOMLauncherV2
             try
             {
                 string json = File.ReadAllText(ProgramDataPath + @"\ProgramData.json");
+                Console.WriteLine(json);
                 this.ProgramData = JsonConvert.DeserializeObject<ProgramData>(json);
             }
             catch (Exception e)
@@ -131,6 +132,16 @@ namespace MW5LOMLauncherV2
                 //Console.WriteLine(e.Message);
                 //Console.WriteLine(e.StackTrace);
                 return true;
+            }
+
+            if(ProgramData == null)
+            {
+                this.ProgramData = new ProgramData()
+                {
+                    vendor = "",
+                    version = 0f,
+                    installdir = new string[2]
+                };
             }
             if (this.ProgramData.version <= 0f)
             {

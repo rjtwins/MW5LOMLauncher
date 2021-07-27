@@ -37,9 +37,5 @@ namespace MW5LOMLauncherV2
             }
             Environment.Exit(0);
         }
-
-        private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
-        {
-        }
     }
 }
