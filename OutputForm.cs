@@ -11,10 +11,10 @@ using System.Windows.Forms;
 
 namespace MW5LOMLauncherV2
 {
-    public partial class Form1 : Form
+    public partial class OutputForm : Form
     {
-        Logic logic;
-        public Form1()
+        private Logic logic;
+        public OutputForm()
         {
             InitializeComponent();
             this.logic = new Logic(this);
@@ -44,6 +44,11 @@ namespace MW5LOMLauncherV2
                 Console.WriteLine(ex.StackTrace);
             }
             Environment.Exit(0);
+        }
+
+        private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }
