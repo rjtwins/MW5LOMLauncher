@@ -1,12 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace MW5LOMLauncherV2
@@ -14,6 +6,7 @@ namespace MW5LOMLauncherV2
     public partial class OutputForm : Form
     {
         private Logic logic;
+
         public OutputForm()
         {
             InitializeComponent();
@@ -23,7 +16,6 @@ namespace MW5LOMLauncherV2
 
         private void textBox1_TextChanged(object sender, EventArgs e)
         {
-
         }
 
         public void timer1_Tick(object sender, EventArgs e)
@@ -48,7 +40,6 @@ namespace MW5LOMLauncherV2
 
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-
         }
     }
 }

@@ -9,11 +9,11 @@ namespace MW5LOMLauncherV2
     public class Logic
     {
         public static Logic logic;
-        ProgramData ProgramData = new ProgramData();
-        string ProgramDataPath = "";
-        string LatestVersion = "";
+        private ProgramData ProgramData = new ProgramData();
+        private string ProgramDataPath = "";
+        private string LatestVersion = "";
         public bool ExeExists = false;
-        bool GithubUnreachable = false;
+        private bool GithubUnreachable = false;
 
         public Logic(OutputForm form1)
         {
@@ -47,7 +47,7 @@ namespace MW5LOMLauncherV2
                 //we are running a "fresh" version with no stored program data or a corrupt program data file.
                 update = true;
             }
-            else if(!GithubUnreachable)
+            else if (!GithubUnreachable)
             {
                 form1.listBox1.Items.Add("Checking for updates...");
                 form1.listBox1.Items.Add(String.Format("The latest release is tagged at {0} we are running {1}",
@@ -115,7 +115,7 @@ namespace MW5LOMLauncherV2
                 System.IO.Directory.CreateDirectory(ProgramDataPath);
                 System.IO.File.Create(ProgramDataPath + @"\ProgramData.json").Close();
                 this.ProgramData.vendor = "EPIC";
-                this.ProgramData.installdir = new string[2] {"",""};
+                this.ProgramData.installdir = new string[2] { "", "" };
                 this.ProgramData.version = 0f;
                 Console.WriteLine(ProgramDataPath + @"\ProgramData.json was not found.");
                 return true;
@@ -137,7 +137,6 @@ namespace MW5LOMLauncherV2
                 Console.WriteLine("Version outside of possible range.");
                 return true;
             }
-
 
             if (File.Exists(ProgramDataPath + @"\MW5 Mod Manager.exe"))
             {
