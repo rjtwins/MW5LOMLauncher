@@ -164,7 +164,6 @@ namespace MW5LOMLauncherV2
             }
             return true;
         }
-    
 
         private void GetLatestVersionFromGitHub()
         {
@@ -196,6 +195,7 @@ namespace MW5LOMLauncherV2
             this.ProgramData.installdir = new string[2] { "", "" };
             this.ProgramData.version = 0f;
             Console.WriteLine(ProgramDataPath + @"\ProgramData.json was not found, created one with empty values.");
+            UpdateProgamDataFile();
         }
 
         /// <summary>
@@ -210,7 +210,7 @@ namespace MW5LOMLauncherV2
             }
             catch (Exception e)
             {
-                Console.WriteLine(ProgramDataPath + @"\ProgramData.json unreadable.");
+                Console.WriteLine(ProgramDataPath + @"\ProgramData.json unreadable or has no content.");
                 return false;
             }
             return true;
@@ -221,6 +221,11 @@ namespace MW5LOMLauncherV2
             string json = File.ReadAllText(ProgramDataPath + @"\ProgramData.json");
             Console.WriteLine(json);
             this.ProgramData = JsonConvert.DeserializeObject<ProgramData>(json);
+            if(this.ProgramData == null)
+            {
+                this.ProgramData = new ProgramData();
+                throw new Exception("ProgramData was read but returned null");
+            }
         }
 
         public void LoadGenProgramData()
