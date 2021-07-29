@@ -11,8 +11,7 @@ namespace MW5LOMLauncherV2
         public static Logic logic;
         private ProgramData ProgramData = new ProgramData();
         private string ProgramDataPath = "";
-        private string LatestVersion = "";
-        public bool ExeExists = false;
+        private string LatestVersion = "0";
         private bool GithubUnreachable = false;
 
         public Logic(OutputForm form1)
@@ -21,33 +20,31 @@ namespace MW5LOMLauncherV2
             this.ProgramDataPath = System.Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) +
                 @"\MW5LoadOrderManager";
 
-            bool update = false;
-
             try
             {
-                var client = new GitHubClient(new ProductHeaderValue("MW5LoadOrderManagerUpdater"));
-                this.LatestVersion = client.Repository.Release.GetLatest("rjtwins", "MW5-Mod-Manager").Result.TagName;
+                GetLatestVersionFromGitHub();
             }
             catch (Exception e)
             {
                 form1.listBox1.Items.Add("Github unreachable for update trying to launch from existing executable...");
                 Console.WriteLine("Github unreachable for update trying to launch from existing executable...");
                 GithubUnreachable = true;
-
+                this.LatestVersion = "0";
                 Console.WriteLine(e.Message);
                 Console.WriteLine(e.StackTrace);
             }
 
-            //Is this our first time running?
-            if (LoadGenProgramData())
-            {
-                form1.listBox1.Items.Add("First time startup or corrupted files detected, staring update/restore...");
-                Console.WriteLine("First time startup or corrupted files detected, staring update/restore...");
+            LoadGenProgramData();
 
-                //we are running a "fresh" version with no stored program data or a corrupt program data file.
-                update = true;
+            if (!ExeExists())
+            {
+                if (HandleNoExeFound(form1))
+                {
+                    return;
+                }
             }
-            else if (!GithubUnreachable)
+
+            if (!GithubUnreachable)
             {
                 form1.listBox1.Items.Add("Checking for updates...");
                 form1.listBox1.Items.Add(String.Format("The latest release is tagged at {0} we are running {1}",
@@ -59,46 +56,120 @@ namespace MW5LOMLauncherV2
                     "The latest release is tagged at {0} we are running {1}",
                     LatestVersion,
                     this.ProgramData.version);
-
-                if (this.ProgramData.version < float.Parse(LatestVersion))
-                {
-                    form1.listBox1.Items.Add("A new version is available, starting update...");
-                    Console.WriteLine("A new version is available, starting update...");
-                    update = true;
-                }
             }
 
-            if (update && !GithubUnreachable)
+            if (float.Parse(this.LatestVersion) > this.ProgramData.version)
             {
-                try
+                form1.listBox1.Items.Add("A new version is available, starting update...");
+                Console.WriteLine("A new version is available, starting update...");
+                if (Update())
                 {
-                    using (var webClient = new WebClient())
-                    {
-                        string url = String.Format("https://github.com/rjtwins/MW5-Mod-Manager/releases/download/{0}/MW5.Mod.Manager.exe", this.LatestVersion);
-                        webClient.DownloadFile(url, this.ProgramDataPath + @"\MW5 Mod Manager.exe");
-                    }
-                    this.ProgramData.version = float.Parse(this.LatestVersion);
-
-                    //Update program data
-                    JsonSerializer serializer = new JsonSerializer();
-                    serializer.Formatting = Formatting.Indented;
-                    using (StreamWriter sw = new StreamWriter(ProgramDataPath + @"\ProgramData.json"))
-                    using (JsonWriter writer = new JsonTextWriter(sw))
-                    {
-                        serializer.Serialize(writer, this.ProgramData);
-                    }
+                    form1.listBox1.Items.Add("Done, starting MW5 Load Order Manager");
+                    Console.WriteLine("Done, starting MW5 Mod Loader Manager");
                 }
-                catch (Exception e)
+                else
                 {
-                    Console.WriteLine(e.Message);
-                    Console.WriteLine(e.StackTrace);
+                    form1.listBox1.Items.Add("Update failed trying to launch present Exe");
+                    Console.WriteLine("Update failed trying to launch present Exe");
                 }
             }
-            form1.listBox1.Items.Add("Done, starting MW5 Load Order Manager");
-            Console.WriteLine("Done, starting MW5 Mod Loader Manager");
+            else
+            {
+                form1.listBox1.Items.Add("We are at the latest version, starting MW5 Load Order Manager");
+                Console.WriteLine("We are at the latest version, starting MW5 Mod Loader Manager");
+            }
 
+            UpdateProgamDataFile();
             form1.timer1.Enabled = true;
             form1.timer1.Start();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="form1"></param>
+        /// <returns>bool succes</returns>
+        private bool HandleNoExeFound(OutputForm form1)
+        {
+            form1.listBox1.Items.Add("No executable found! Trying to update...");
+            Console.WriteLine("No executable found! Trying to update...");
+
+            if (GithubUnreachable)
+            {
+                form1.listBox1.Items.Add("Update failed closing program.");
+                Console.WriteLine("Update failed closing program.");
+                form1.Close();
+                Environment.Exit(0);
+                return false;
+            }
+
+            if (Update())
+            {
+                form1.listBox1.Items.Add("Done, starting MW5 Load Order Manager");
+                Console.WriteLine("Done, starting MW5 Mod Loader Manager");
+
+                UpdateProgamDataFile();
+                form1.timer1.Enabled = true;
+                form1.timer1.Start();
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 
+        /// 
+        /// </summary>
+        /// <returns>bool succes</returns>
+        private bool Update()
+        {
+            if (GithubUnreachable)
+            {
+                return false;
+            }
+            try
+            {
+                using (var webClient = new WebClient())
+                {
+                    string url = String.Format("https://github.com/rjtwins/MW5-Mod-Manager/releases/download/{0}/MW5.Mod.Manager.exe", this.LatestVersion);
+                    webClient.DownloadFile(url, this.ProgramDataPath + @"\MW5 Mod Manager.exe");
+                }
+            }catch(Exception e)
+            {
+                return false;
+            }
+
+            this.ProgramData.version = float.Parse(this.LatestVersion);
+            return true;
+        }
+
+        private bool UpdateProgamDataFile()
+        {
+            try
+            {
+                //Update program data
+                JsonSerializer serializer = new JsonSerializer();
+                serializer.Formatting = Formatting.Indented;
+                using (StreamWriter sw = new StreamWriter(ProgramDataPath + @"\ProgramData.json"))
+                using (JsonWriter writer = new JsonTextWriter(sw))
+                {
+                    serializer.Serialize(writer, this.ProgramData);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+                return false;
+            }
+            return true;
+        }
+    
+
+        private void GetLatestVersionFromGitHub()
+        {
+            var client = new GitHubClient(new ProductHeaderValue("MW5LoadOrderManagerUpdater"));
+            this.LatestVersion = client.Repository.Release.GetLatest("rjtwins", "MW5-Mod-Manager").Result.TagName;
         }
 
         internal static void StartMainProgram()
@@ -107,59 +178,84 @@ namespace MW5LOMLauncherV2
             System.Diagnostics.Process.Start(Logic.logic.ProgramDataPath + @"\MW5 Mod Manager.exe");
         }
 
-        public bool LoadGenProgramData()
+        private void HandleNoProgramDataFile()
         {
             //Load install dir from previous session:
-            if (!File.Exists(ProgramDataPath + @"\ProgramData.json"))
+            if (File.Exists(ProgramDataPath + @"\ProgramData.json"))
             {
-                System.IO.Directory.CreateDirectory(ProgramDataPath);
-                System.IO.File.Create(ProgramDataPath + @"\ProgramData.json").Close();
-                this.ProgramData.vendor = "EPIC";
-                this.ProgramData.installdir = new string[2] {"", ""};
-                this.ProgramData.version = 0f;
-                Console.WriteLine(ProgramDataPath + @"\ProgramData.json was not found.");
-                return true;
+                return;
             }
+            CreateEmptyProgramDataFile();
+        }
+
+        private void CreateEmptyProgramDataFile()
+        {
+            System.IO.Directory.CreateDirectory(ProgramDataPath);
+            System.IO.File.Create(ProgramDataPath + @"\ProgramData.json").Close();
+            this.ProgramData.vendor = "";
+            this.ProgramData.installdir = new string[2] { "", "" };
+            this.ProgramData.version = 0f;
+            Console.WriteLine(ProgramDataPath + @"\ProgramData.json was not found, created one with empty values.");
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns>bool succes</returns>
+        private bool TryReadProgramData()
+        {
             try
             {
-                string json = File.ReadAllText(ProgramDataPath + @"\ProgramData.json");
-                Console.WriteLine(json);
-                this.ProgramData = JsonConvert.DeserializeObject<ProgramData>(json);
+                ReadProgramData();
             }
             catch (Exception e)
             {
                 Console.WriteLine(ProgramDataPath + @"\ProgramData.json unreadable.");
-                //Console.WriteLine(e.Message);
-                //Console.WriteLine(e.StackTrace);
-                return true;
+                return false;
+            }
+            return true;
+        }
+
+        private void ReadProgramData()
+        {
+            string json = File.ReadAllText(ProgramDataPath + @"\ProgramData.json");
+            Console.WriteLine(json);
+            this.ProgramData = JsonConvert.DeserializeObject<ProgramData>(json);
+        }
+
+        public void LoadGenProgramData()
+        {
+            HandleNoProgramDataFile();
+
+            if (!TryReadProgramData())
+            {
+                CreateEmptyAndTryReadProgramData();
             }
 
-            if(ProgramData == null)
+            if (VersionOutOfRange())
             {
-                this.ProgramData = new ProgramData()
-                {
-                    vendor = "",
-                    version = 0f,
-                    installdir = new string[2]
-                };
-            }
-            if (this.ProgramData.version <= 0f)
-            {
-                Console.WriteLine("Version outside of possible range.");
-                return true;
+                Console.WriteLine("Version outside of possible range. Setting version to v.0.");
+                this.ProgramData.version = 0f;
             }
 
-            if (File.Exists(ProgramDataPath + @"\MW5 Mod Manager.exe"))
+            bool VersionOutOfRange()
             {
-                ExeExists = true;
+                return this.ProgramData.version <= 0f;
             }
-            //ProgramData.json is fine but the exe file is missing? Update to get it.
-            else
+        }
+
+        private void CreateEmptyAndTryReadProgramData()
+        {
+            CreateEmptyProgramDataFile();
+            if (!TryReadProgramData())
             {
-                Console.WriteLine(ProgramDataPath + @"\MW5 Mod Manager.exe not found.");
-                return true;
+                throw new Exception("Unable to read or create program data from " + this.ProgramDataPath + @"\ProgramData.json");
             }
-            return false;
+        }
+
+        public bool ExeExists()
+        {
+            return File.Exists(ProgramDataPath + @"\MW5 Mod Manager.exe");
         }
     }
 }
